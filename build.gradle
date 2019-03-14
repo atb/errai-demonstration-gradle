@@ -1,0 +1,338 @@
+// (ATB)
+// - Wildfly seems to have a problem with Docker. Wildfly 11+ seems to solve the problem.
+// - Wildfly provison. See: https://github.com/wildfly/wildfly-gradle-tools
+
+import java.nio.file.Files
+import java.nio.file.Paths
+
+buildscript {
+  ext.overridable = { prop, defaultVal ->
+    hasProperty(prop) ? getProperty(prop) : defaultVal
+  }
+
+  ext.exec = { cmd ->
+    cmd.execute().text.trim()
+  }
+
+  ext.versions = [ gmd: [:] ]
+  versions.gwt          =   "2.8.2"
+  versions.errai        =   "4.1.0-SNAPSHOT"
+  //versions.errai        =   "4.5.0-SNAPSHOT"
+//  versions.gmd.core     =   "2.0-rc3"
+//  versions.gmd.jquery   =   "1.0-rc3"
+//  versions.gmd.table    =   "1.0-rc3"
+
+  ext.gwt =  [ modules: [:], dir: [:] ]
+  gwt.workers           =   "2"
+  gwt.log               =   overridable("gwtLog", "INFO")
+  gwt.modules.dev       =   "org.atb.errai.demo.contactlist.ContactList"
+  gwt.modules.prod      =   "org.atb.errai.demo.contactlist.ContactList"
+  gwt.dir.build         =   "${buildDir}/gwt"
+  gwt.dir.deps          =   "${gwt.dir.build}/deps"
+  gwt.dir.input         =   "${gwt.dir.build}/input"
+  gwt.dir.output        =   "${gwt.dir.build}/output"
+  gwt.dir.extra         =   "${gwt.dir.build}/extra"
+  gwt.dir.dev           =   "${gwt.dir.build}/dev"
+  gwt.dir.unitcache     =   "${gwt.dir.build}/unitcache"
+
+  ext.errai =  [ dir: [:] ]
+  errai.dir.work        =   "${projectDir}/.errai"
+  errai.dir.build       =   "${buildDir}/errai"
+  errai.dir.output      =   "${errai.dir.build}/output"
+
+  // (ATB) Original
+  // ext.deploy =  [ dir: [:] ]
+  // deploy.dir.war        =   "${projectDir}/war"
+  // deploy.dir.app        =   "${deploy.dir.war}/${name}.war"
+
+  ext.wildflyDir                 =   "${projectDir}/wildfly"
+  ext.wildflyDeploymentDir       =   "${wildflyDir}/standalone/deployments"
+  ext.wildflyDeploymentApp       =    "${wildflyDeploymentDir}/${name}.war"
+
+  // (ATB) new
+  ext.deploy =  [ dir: [:] ]
+  deploy.dir.war        =   "${wildflyDeploymentDir}"
+  deploy.dir.app        =   "${wildflyDeploymentApp}"
+
+}
+
+plugins {
+	id 'org.wildfly.build.provision' version '0.0.9'
+}
+
+apply plugin: "war"
+apply plugin: "eclipse"
+
+repositories {
+
+  	mavenCentral()
+
+	// JBoss Public Repo
+	maven {
+        url "https://repository.jboss.org/nexus/content/groups/public"
+    }
+
+    // Sonatype Public Snapshots Repo
+	maven {
+        url "https://oss.sonatype.org/content/repositories/public"
+    }
+}
+
+provision {
+  //Optional provisioning configuration:
+  configuration = "server-provisioning.xml"
+  variables['wildfly.version'] = '15.0.1.Final'
+  destinationDir =  file("${wildflyDir}")
+}
+
+dependencies {
+	// For GWT
+ 	providedCompile "com.google.gwt:gwt-user:$versions.gwt"
+ 	providedCompile "com.google.gwt:gwt-dev:$versions.gwt"
+ 	runtime "com.google.gwt:gwt-servlet:$versions.gwt"
+    //providedCompile "com.google.guava:guava-gwt:20.0"	// ok
+	compile "com.google.guava:guava-gwt:20.0"	// ok
+
+	// For hibernate 	- voltar a colocar @jar no final?
+    providedCompile "org.hibernate.common:hibernate-commons-annotations:5.0.1.Final" // ok
+    providedCompile "org.hibernate:hibernate-core:5.1.4.Final"	// ok
+    // providedCompile "org.hibernate:hibernate-core:5+"	// ok
+    providedCompile "org.hibernate:hibernate-entitymanager:5.1.4.Final"	// ok
+    // providedCompile "org.hibernate:hibernate-entitymanager:5+"	// ok
+    //providedCompile "org.hibernate:hibernate-validator:4.1.0.Final"	// ok
+
+	// providedCompile "org.hibernate:hibernate-validator:5+"	// ok
+
+    //providedCompile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1+"
+
+	// For Errai
+	compile "org.jboss.errai:errai-javaee-all:$versions.errai", { exclude group: "asm" }
+ 	compile "org.jboss.errai:errai-jboss-as-support:$versions.errai"
+  	compile "org.jboss.errai:errai-cdi-jboss:$versions.errai" // ok
+    compile "org.jboss.errai:errai-cdi-server:$versions.errai" // ok
+    compile "org.jboss.errai:errai-common:$versions.errai" 	// (ATB;2019-03-07?)
+
+    compile "org.jboss.errai:errai-jaxrs-client:$versions.errai"	// ok
+  	providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final"
+
+  	// compile "org.slf4j:slf4j-log4j12:1.5.6"
+
+  	// providedCompile "dom4j:dom4j:1.6.1@jar"
+
+  	//providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final" // ok
+
+    //compile "org.jboss.errai:errai-common:$versions.errai" // (ATB;2019-03-07?)
+    // providedCompile "org.slf4j:slf4j-log4j12:1.7.7"	// (ATB)
+
+	// For Wildfly
+	// providedCompile 'org.wildfly:wildfly-spec-api:15.0.1.Final'
+
+  //providedCompile "com.github.gwtmaterialdesign:gwt-material:$versions.gmd.core"
+  //providedCompile "com.github.gwtmaterialdesign:gwt-material-addins:$versions.gmd.core"
+  //providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$versions.gmd.core"
+  //providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$versions.gmd.jquery"
+  //providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$versions.gmd.table"
+
+	/*
+  	providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final" // ok
+
+	// (ATB)
+    providedCompile "org.hibernate.common:hibernate-commons-annotations:5.0.1.Final" // ok
+    providedCompile "org.hibernate:hibernate-core:5.1.4.Final"	// ok
+    providedCompile "org.hibernate:hibernate-entitymanager:5.1.4.Final"	// ok
+    providedCompile "org.hibernate:hibernate-validator:4.1.0.Final"	// ok
+
+    // see: https://www.gesellix.net/post/providedcompile-and-compile-dependencies-with-gradle/
+    providedCompile "dom4j:dom4j:1.6.1"		// will not be included in the package
+    providedCompile "com.google.guava:guava-gwt:20.0"	// ok
+    providedCompile "org.jboss.errai:errai-jaxrs-client:4.1.0-SNAPSHOT"	// ok
+    compile "org.jboss.errai:errai-jaxrs-provider:4.1.0-SNAPSHOT"	// Only include if we want errai json marshalling and not want jackson json marshalling
+    providedCompile "org.jboss.errai:errai-jpa-client:4.1.0-SNAPSHOT"
+
+ 	compile "org.jboss.errai:errai-cdi-jboss:4.1.0-SNAPSHOT" // ok
+    compile "org.jboss.errai:errai-cdi-server:4.1.0-SNAPSHOT" // ok
+	*/
+}
+
+clean.doFirst {
+  delete errai.dir.work
+  delete deploy.dir.war
+}
+
+// [WINDOWS]
+//  A shell command has a limited maximum size.
+//  Deep dependency chains require large paths for gwt{Compiler,CodeServer}.
+//  Therefore, soft symbolic links are generated to all the dependencies.
+//  The output directory can then be added to the classpath.
+// [NOTE]
+//  Soft symbolic links are used because Windows NTFS does not allow hard links
+//  to be removed when in use. Hard links cause build failures as the Gradle daemon keeps a
+//  reference to the files it copies. This blocks the deamon from overwriting them in a subsequent build.
+// [WARNING]
+//  To create symbolic links in Windows, the shell needs to be run with administator privileges,
+//  _even_ if you're a user with administrator privileges.
+task gwtDependencies() {
+  inputs.files configurations.compile
+  inputs.files configurations.providedCompile
+  // inputs.files configurations.runtime 	// (ATB)
+  outputs.dir gwt.dir.deps
+  doFirst { file(gwt.dir.deps).mkdirs() }
+  doLast {
+    def target = Paths.get(gwt.dir.deps)
+    def deps = configurations.compile.files + configurations.providedCompile.files // + configurations.runtime 	// (ATB)
+    def valid = deps.collect { file -> createSymbolicLink(file.toPath(), target) }
+    // Remove dependencies which no longer exist. Having this avoids the need to depend on task
+    // "clear", but still correctly recognizes when dependencies have been removed and a
+    // recompile should be triggered.
+    fileTree(gwt.dir.deps).minus(valid).each { file ->
+      logger.debug("Removed unreferenced cached dependency: " + file)
+      delete file
+    }
+  }
+}
+
+def createSymbolicLink(def origin, def target) {
+  def fileName = origin.fileName
+  def link = target.resolve(fileName)
+  // [WARNING] dependencies with the same filename but different content will be skipped because of this.
+  if(!link.toFile().exists())
+    Files.createSymbolicLink(link, origin)
+  link.toFile()
+}
+
+// Merge GWT inputs (source, classes, resources) to ensure Errai required property files are picked
+// up correctly, e.g. ErraiApp.propeties, and Errai generators are triggered.
+task gwtClasses(type: Copy, dependsOn: classes) {
+  includeEmptyDirs false
+  from sourceSets.main.output.resourcesDir
+  from(sourceSets.main.java.srcDirs) {
+    include "**/**.gwt.xml"
+    include "**/client/**"
+    include "**/shared/**"
+  }
+  from(sourceSets.main.output.classesDirs) {
+    include "**/client/**"
+    include "**/shared/**"
+  }
+  into gwt.dir.input
+}
+
+// [WINDOWS]
+//  The classpath closure of the JavaExec task can not be used, because it
+//  refuses to accept directory wildcards in Windows.
+//  This would generate a "Could not normalize path" error.
+//  Therefore, the classpath must be provided as a JVM argument using "--classpath"
+def gwtClasspath() {
+  [gwt.dir.input, "${gwt.dir.deps}/*"].flatten().join(":")
+}
+
+task gwtCompile(type: JavaExec, dependsOn: [gwtClasses, gwtDependencies]) {
+  main = "com.google.gwt.dev.Compiler"
+  jvmArgs = ["-classpath", gwtClasspath()]
+  maxHeapSize = "1024M"
+  inputs.files(gwtClasses.destinationDir).skipWhenEmpty()
+  inputs.files gwt.dir.deps
+  outputs.dir gwt.dir.output
+  args = [
+    gwt.modules.prod,
+    "-war", gwt.dir.output,
+    "-logLevel", gwt.log,
+    "-localWorkers", gwt.workers,
+    "-failOnError",
+    "-generateJsInteropExports",
+    "-extra", gwt.dir.extra
+  ].flatten()
+  // Avoid generated errai classes to be added to the build/classes folder
+  // which in turn would trigger a redundant recompile even when nothing changes.
+  // [NOTE] The generated classes need be added to the final WAR.
+  systemProperties["errai.server.classOutput"] = errai.dir.output
+}
+
+war.dependsOn gwtCompile
+war {
+  includeEmptyDirs false
+  from gwt.dir.output                                // include GWT generated output files
+  from (errai.dir.output) { into "WEB-INF/classes" } // include Errai generated output files
+  // (ATB-ORIGINAL)rootSpec.exclude("**/client/**")                   // exclude GWT specific client-side java source code
+	rootSpec.exclude("**/client/local/**")                   // exclude GWT specific client-side java source code
+}
+
+task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
+  main = "com.google.gwt.dev.codeserver.CodeServer"
+  jvmArgs = ["-classpath", gwtClasspath()]
+  doFirst { file(gwt.dir.dev).mkdirs() }
+  args = [
+    gwt.modules.dev,
+    "-logLevel", gwt.log,
+    "-launcherDir", deploy.dir.app,
+    "-workDir", gwt.dir.dev,
+    "-style", "Pretty",
+    "-generateJsInteropExports",
+    "-bindAddress", "0.0.0.0"
+  ].flatten()
+  systemProperties["gwt.persistentunitcachedir"] = gwt.dir.unitcache
+}
+
+task redeploy(type: Copy, dependsOn: war) {
+  doFirst {
+    delete wildflyDeploymentApp+'.deployed'
+    delete deploy.dir.app
+    file(deploy.dir.app).mkdirs()
+    ant.touch(file: wildflyDeploymentApp+'.dodeploy')
+  }
+  into deploy.dir.app
+  with war
+}
+
+/*
+task redeployToWildfly(type: Copy, dependsOn: war) {
+  doFirst {
+    delete wildflyDeploymentApp
+    delete wildflyDeploymentApp+'.deployed'
+    ant.touch(file: wildflyDeploymentApp+'.dodeploy')
+  }
+  into wildflyDeploymentApp
+  with war
+}
+*/
+
+/*
+task stop {
+  doLast { exec("docker-compose -f src/main/docker/wildfly-debug.yml down") }
+}
+
+task start(dependsOn: stop) {
+  doFirst { file(deploy.dir.app).mkdirs() }
+  doLast { exec("docker-compose -f src/main/docker/wildfly-debug.yml up -d") }
+  finalizedBy redeploy
+}
+*/
+
+task startWildfly(type:Exec, dependsOn: redeploy) {
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine 'cmd', '/c', "${wildflyDir}/bin/standalone.bat"
+    } else {
+        commandLine "${wildflyDir}/bin/standalone.sh"
+        // -Djboss.server.deploy.dir=/path/to/new_deployed_content
+    }
+    // finalizedBy redeploy
+}
+
+task startWildflyDebug(type:Exec, dependsOn: redeploy) {
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine 'cmd', '/c', "${wildflyDir}/bin/standalone.bat"
+    } else {
+        commandLine "${wildflyDir}/bin/standalone.sh", '--debug', 'localhost:8787'
+        //commandLine "${wildflyDir}/bin/standalone.sh", '-b=127.0.0.1', '--debug', '*:8787'
+        // -Djboss.server.deploy.dir=/path/to/new_deployed_content
+    }
+    // finalizedBy redeploy
+}
+
+task stopWildfly(type:Exec) {
+    if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+        commandLine 'cmd', '/c', "${wildflyDir}/bin/jboss-cli.sh", '--connect', 'command=:shutdown'
+    } else {
+        commandLine "${wildflyDir}/bin/jboss-cli.sh", '--connect', 'command=:shutdown'
+    }
+}
