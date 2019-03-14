@@ -1,5 +1,4 @@
 // (ATB)
-// - Wildfly seems to have a problem with Docker. Wildfly 11+ seems to solve the problem.
 // - Wildfly provison. See: https://github.com/wildfly/wildfly-gradle-tools
 
 import java.nio.file.Files
@@ -17,10 +16,6 @@ buildscript {
   ext.versions = [ gmd: [:] ]
   versions.gwt          =   "2.8.2"
   versions.errai        =   "4.1.0-SNAPSHOT"
-  //versions.errai        =   "4.5.0-SNAPSHOT"
-//  versions.gmd.core     =   "2.0-rc3"
-//  versions.gmd.jquery   =   "1.0-rc3"
-//  versions.gmd.table    =   "1.0-rc3"
 
   ext.gwt =  [ modules: [:], dir: [:] ]
   gwt.workers           =   "2"
@@ -78,80 +73,28 @@ repositories {
     }
 }
 
-provision {
-  //Optional provisioning configuration:
-  configuration = "server-provisioning.xml"
-  variables['wildfly.version'] = '15.0.1.Final'
-  destinationDir =  file("${wildflyDir}")
-}
 
 dependencies {
 	// For GWT
  	providedCompile "com.google.gwt:gwt-user:$versions.gwt"
  	providedCompile "com.google.gwt:gwt-dev:$versions.gwt"
  	runtime "com.google.gwt:gwt-servlet:$versions.gwt"
-    //providedCompile "com.google.guava:guava-gwt:20.0"	// ok
-	compile "com.google.guava:guava-gwt:20.0"	// ok
+	compile "com.google.guava:guava-gwt:20.0"	
 
-	// For hibernate 	- voltar a colocar @jar no final?
-    providedCompile "org.hibernate.common:hibernate-commons-annotations:5.0.1.Final" // ok
-    providedCompile "org.hibernate:hibernate-core:5.1.4.Final"	// ok
-    // providedCompile "org.hibernate:hibernate-core:5+"	// ok
-    providedCompile "org.hibernate:hibernate-entitymanager:5.1.4.Final"	// ok
-    // providedCompile "org.hibernate:hibernate-entitymanager:5+"	// ok
-    //providedCompile "org.hibernate:hibernate-validator:4.1.0.Final"	// ok
-
-	// providedCompile "org.hibernate:hibernate-validator:5+"	// ok
-
-    //providedCompile "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1+"
+	// For hibernate 
+    providedCompile "org.hibernate.common:hibernate-commons-annotations:5.0.1.Final" 
+    providedCompile "org.hibernate:hibernate-core:5.1.4.Final"	
+    providedCompile "org.hibernate:hibernate-entitymanager:5.1.4.Final"	
 
 	// For Errai
 	compile "org.jboss.errai:errai-javaee-all:$versions.errai", { exclude group: "asm" }
  	compile "org.jboss.errai:errai-jboss-as-support:$versions.errai"
-  	compile "org.jboss.errai:errai-cdi-jboss:$versions.errai" // ok
-    compile "org.jboss.errai:errai-cdi-server:$versions.errai" // ok
-    compile "org.jboss.errai:errai-common:$versions.errai" 	// (ATB;2019-03-07?)
+  	compile "org.jboss.errai:errai-cdi-jboss:$versions.errai" 
+    compile "org.jboss.errai:errai-cdi-server:$versions.errai" 
+    compile "org.jboss.errai:errai-common:$versions.errai" 	
 
-    compile "org.jboss.errai:errai-jaxrs-client:$versions.errai"	// ok
+    compile "org.jboss.errai:errai-jaxrs-client:$versions.errai"	
   	providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final"
-
-  	// compile "org.slf4j:slf4j-log4j12:1.5.6"
-
-  	// providedCompile "dom4j:dom4j:1.6.1@jar"
-
-  	//providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final" // ok
-
-    //compile "org.jboss.errai:errai-common:$versions.errai" // (ATB;2019-03-07?)
-    // providedCompile "org.slf4j:slf4j-log4j12:1.7.7"	// (ATB)
-
-	// For Wildfly
-	// providedCompile 'org.wildfly:wildfly-spec-api:15.0.1.Final'
-
-  //providedCompile "com.github.gwtmaterialdesign:gwt-material:$versions.gmd.core"
-  //providedCompile "com.github.gwtmaterialdesign:gwt-material-addins:$versions.gmd.core"
-  //providedCompile "com.github.gwtmaterialdesign:gwt-material-themes:$versions.gmd.core"
-  //providedCompile "com.github.gwtmaterialdesign:gwt-material-jquery:$versions.gmd.jquery"
-  //providedCompile "com.github.gwtmaterialdesign:gwt-material-table:$versions.gmd.table"
-
-	/*
-  	providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final" // ok
-
-	// (ATB)
-    providedCompile "org.hibernate.common:hibernate-commons-annotations:5.0.1.Final" // ok
-    providedCompile "org.hibernate:hibernate-core:5.1.4.Final"	// ok
-    providedCompile "org.hibernate:hibernate-entitymanager:5.1.4.Final"	// ok
-    providedCompile "org.hibernate:hibernate-validator:4.1.0.Final"	// ok
-
-    // see: https://www.gesellix.net/post/providedcompile-and-compile-dependencies-with-gradle/
-    providedCompile "dom4j:dom4j:1.6.1"		// will not be included in the package
-    providedCompile "com.google.guava:guava-gwt:20.0"	// ok
-    providedCompile "org.jboss.errai:errai-jaxrs-client:4.1.0-SNAPSHOT"	// ok
-    compile "org.jboss.errai:errai-jaxrs-provider:4.1.0-SNAPSHOT"	// Only include if we want errai json marshalling and not want jackson json marshalling
-    providedCompile "org.jboss.errai:errai-jpa-client:4.1.0-SNAPSHOT"
-
- 	compile "org.jboss.errai:errai-cdi-jboss:4.1.0-SNAPSHOT" // ok
-    compile "org.jboss.errai:errai-cdi-server:4.1.0-SNAPSHOT" // ok
-	*/
 }
 
 clean.doFirst {
@@ -258,6 +201,9 @@ war {
 }
 
 task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
+	group 'GWT'
+  	description 'Starts the GWT code server'
+  	
   main = "com.google.gwt.dev.codeserver.CodeServer"
   jvmArgs = ["-classpath", gwtClasspath()]
   doFirst { file(gwt.dir.dev).mkdirs() }
@@ -273,6 +219,8 @@ task gwtDev(type: JavaExec, dependsOn: gwtCompile) {
   systemProperties["gwt.persistentunitcachedir"] = gwt.dir.unitcache
 }
 
+// Wildfly related tasks
+
 task redeploy(type: Copy, dependsOn: war) {
   doFirst {
     delete wildflyDeploymentApp+'.deployed'
@@ -284,52 +232,43 @@ task redeploy(type: Copy, dependsOn: war) {
   with war
 }
 
-/*
-task redeployToWildfly(type: Copy, dependsOn: war) {
-  doFirst {
-    delete wildflyDeploymentApp
-    delete wildflyDeploymentApp+'.deployed'
-    ant.touch(file: wildflyDeploymentApp+'.dodeploy')
-  }
-  into wildflyDeploymentApp
-  with war
+// This task is from the plugin org.wildfly.build.provision
+provision {
+	group 'Wildfly'
+  	description 'Provisions Wildfly locally'
+  	
+  //Optional provisioning configuration:
+  configuration = "server-provisioning.xml"
+  variables['wildfly.version'] = '15.0.1.Final'
+  destinationDir =  file("${wildflyDir}")
 }
-*/
-
-/*
-task stop {
-  doLast { exec("docker-compose -f src/main/docker/wildfly-debug.yml down") }
-}
-
-task start(dependsOn: stop) {
-  doFirst { file(deploy.dir.app).mkdirs() }
-  doLast { exec("docker-compose -f src/main/docker/wildfly-debug.yml up -d") }
-  finalizedBy redeploy
-}
-*/
 
 task startWildfly(type:Exec, dependsOn: redeploy) {
+	group 'Wildfly'
+  	description 'Starts Wildfly'
+  
     if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
         commandLine 'cmd', '/c', "${wildflyDir}/bin/standalone.bat"
     } else {
         commandLine "${wildflyDir}/bin/standalone.sh"
-        // -Djboss.server.deploy.dir=/path/to/new_deployed_content
     }
-    // finalizedBy redeploy
 }
 
 task startWildflyDebug(type:Exec, dependsOn: redeploy) {
+	group 'Wildfly'
+  	description 'Starts Wildfly in Debug mode'
+  	
     if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
-        commandLine 'cmd', '/c', "${wildflyDir}/bin/standalone.bat"
+        commandLine 'cmd', '/c', "${wildflyDir}/bin/standalone.bat", '--debug', 'localhost:8787'
     } else {
         commandLine "${wildflyDir}/bin/standalone.sh", '--debug', 'localhost:8787'
-        //commandLine "${wildflyDir}/bin/standalone.sh", '-b=127.0.0.1', '--debug', '*:8787'
-        // -Djboss.server.deploy.dir=/path/to/new_deployed_content
     }
-    // finalizedBy redeploy
 }
 
 task stopWildfly(type:Exec) {
+	group 'Wildfly'
+  	description 'Stops Wildfly'
+  	
     if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
         commandLine 'cmd', '/c', "${wildflyDir}/bin/jboss-cli.sh", '--connect', 'command=:shutdown'
     } else {
