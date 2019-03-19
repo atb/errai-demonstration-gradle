@@ -275,3 +275,9 @@ task stopWildfly(type:Exec) {
         commandLine "${wildflyDir}/bin/jboss-cli.sh", '--connect', 'command=:shutdown'
     }
 }
+
+javadoc {
+	// The following settings are required for GWT projects
+	source = sourceSets.main.allJava
+	options.addStringOption("sourcepath", "")
+}
