@@ -7,6 +7,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import org.jboss.errai.common.client.api.annotations.Portable;
 import org.jboss.errai.databinding.client.api.Bindable;
@@ -25,6 +28,10 @@ public class Contact implements Serializable, Comparable<Contact> {
 	private long id;
 
 	private String name;
+	
+	@NotNull(message = "Phone number is invalid")
+	@Pattern(regexp = "(\\+?)[0-9]*\\s?[0-9]*")
+	@Size(min = 9, max = 15)
 	private String email;
 
 	public Contact() {

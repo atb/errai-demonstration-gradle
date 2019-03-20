@@ -1,6 +1,10 @@
 package org.atb.errai.demo.contactlist.client.local;
 
+import java.util.Set;
+
 import javax.inject.Inject;
+import javax.validation.Validator;
+import javax.validation.ConstraintViolation;
 
 import org.atb.errai.demo.contactlist.client.shared.Contact;
 import org.atb.errai.demo.contactlist.client.shared.ContactService;
@@ -52,8 +56,16 @@ public class NewContactPage extends Composite {
 	@Inject
 	private Caller<ContactService> contactService;
 	
+	@Inject
+	private Validator validator;
+	
 	@EventHandler("create")
 	public void createContact(ClickEvent e) {
+		Set<ConstraintViolation<Contact>> violations = validator.validate(contact);
+		if (!violations.isEmpty()) {
+			Window.alert(violations.iterator().next().getMessage());
+		}
+		
 		 //Window.alert("createClicked");
 		contactService.call((Response response) -> {
 					goToContactListPage.go();
