@@ -89,9 +89,9 @@ dependencies {
 	// For Errai
 	compile "org.jboss.errai:errai-javaee-all:$versions.errai", { exclude group: "asm" }
  	compile "org.jboss.errai:errai-jboss-as-support:$versions.errai"
-  	compile "org.jboss.errai:errai-cdi-jboss:$versions.errai" 
-    compile "org.jboss.errai:errai-cdi-server:$versions.errai" 
-    compile "org.jboss.errai:errai-common:$versions.errai" 	
+  	compile "org.jboss.errai:errai-cdi-jboss:$versions.errai", { exclude group: "asm" } 
+    compile "org.jboss.errai:errai-cdi-server:$versions.errai", { exclude group: "asm" } 
+    compile "org.jboss.errai:errai-common:$versions.errai", { exclude group: "asm" } 	
 
     compile "org.jboss.errai:errai-jaxrs-client:$versions.errai"	
   	providedCompile "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.1.Final"
@@ -166,7 +166,11 @@ task gwtClasses(type: Copy, dependsOn: classes) {
 //  This would generate a "Could not normalize path" error.
 //  Therefore, the classpath must be provided as a JVM argument using "--classpath"
 def gwtClasspath() {
-  [gwt.dir.input, "${gwt.dir.deps}/*"].flatten().join(":")
+	if (System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')) {
+		[gwt.dir.input, "${gwt.dir.deps}/*"].flatten().join(";")
+	} else {
+		[gwt.dir.input, "${gwt.dir.deps}/*"].flatten().join(":")
+	}
 }
 
 task gwtCompile(type: JavaExec, dependsOn: [gwtClasses, gwtDependencies]) {
